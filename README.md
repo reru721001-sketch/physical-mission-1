@@ -14,7 +14,7 @@ flowchart LR
         BUZ["부저<br/>GPIO12"]
     end
 
-    subgraph ESP1["ESP32 #1 (ROOM_ID 1) · AP 192.168.4.1"]
+    subgraph ESP1["ESP32 · AP 192.168.4.1"]
         EDGE["엣지 제어<br/>침대 이탈 · 환경 판단"]
         AUTH["접근 통제<br/>토큰 인증 · IP 차단"]
         WEB["웹서버 :80<br/>/ 대시보드 · /api/*"]
@@ -22,7 +22,6 @@ flowchart LR
         AUTH --> WEB
     end
 
-    ESP2["ESP32 #2 (ROOM_ID 2)<br/>STA 192.168.4.12<br/>작은방 2 센서"]
     PHONE["보호자 휴대폰<br/>브라우저"]
 
     PIR --> EDGE
@@ -31,13 +30,11 @@ flowchart LR
     EDGE --> LED
     EDGE --> BUZ
 
-    ESP2 -- "Wi-Fi 접속<br/>HomeCare-Net" --> ESP1
-    PHONE -- "Wi-Fi 접속 · HTTP<br/>X-Auth-Token" --> WEB
-    PHONE -. "작은방 2 데이터<br/>/api/status, /api/events" .-> ESP2
+    PHONE -- "Wi-Fi 접속 HomeCare-Net<br/>HTTP · X-Auth-Token" --> WEB
 ```
 
-- 인터넷 없이 **ESP32 #1이 Wi-Fi 공유기(AP)** 역할을 합니다. 휴대폰과 ESP32 #2가 여기에 접속합니다.
-- 휴대폰 브라우저는 #1에서 대시보드 페이지를 받고, 두 보드의 `/api/*`를 3초마다 직접 조회합니다.
+- 인터넷 없이 **ESP32가 Wi-Fi 공유기(AP)** 역할을 하고, 보호자 휴대폰이 여기에 접속합니다.
+- 휴대폰 브라우저는 ESP32에서 대시보드 페이지를 받고, `/api/*`를 3초마다 조회합니다.
 
 ## 주요 기능
 - **침대 이탈 감지**: PIR 센서에 움직임이 5초 이상 잡히면 수면등을 자동으로 켭니다.
@@ -63,5 +60,3 @@ flowchart LR
 2. 휴대폰을 Wi-Fi **`HomeCare-Net`**에 연결합니다. 비밀번호는 코드의 `AP_PASS` 값입니다.
 3. 브라우저에서 **http://192.168.4.1/** 에 접속합니다.
 4. 코드의 `AUTH_TOKEN` 값을 입력하면 대시보드가 열립니다.
-
-> 보드를 2개 쓰려면 두 번째 보드는 `ROOM_ID = 2`로 바꿔서 업로드합니다. 보드가 1개뿐이면 웹 화면에서 작은방 2가 "연결 끊김"으로 표시됩니다.
