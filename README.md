@@ -2,6 +2,43 @@
 
 ESP32 보드 하나로 아이 방의 온도·습도·움직임을 감지하고, 보호자가 휴대폰 브라우저로 바로 확인하는 스마트 홈케어 시스템입니다. 인터넷이나 클라우드 없이 동작합니다.
 
+## 아키텍처
+
+```mermaid
+flowchart LR
+    subgraph Sensors["센서 / 출력 (작은방 1)"]
+        PIR["PIR 센서<br/>GPIO32"]
+        DHT["DHT11 온습도<br/>GPIO27"]
+        BTN["현장 확인 버튼<br/>GPIO14"]
+        LED["수면등 LED<br/>GPIO25"]
+        BUZ["부저<br/>GPIO12"]
+    end
+
+    subgraph ESP1["ESP32 #1 (ROOM_ID 1) · AP 192.168.4.1"]
+        EDGE["엣지 제어<br/>침대 이탈 · 환경 판단"]
+        AUTH["접근 통제<br/>토큰 인증 · IP 차단"]
+        WEB["웹서버 :80<br/>/ 대시보드 · /api/*"]
+        EDGE --> WEB
+        AUTH --> WEB
+    end
+
+    ESP2["ESP32 #2 (ROOM_ID 2)<br/>STA 192.168.4.12<br/>작은방 2 센서"]
+    PHONE["보호자 휴대폰<br/>브라우저"]
+
+    PIR --> EDGE
+    DHT --> EDGE
+    BTN --> EDGE
+    EDGE --> LED
+    EDGE --> BUZ
+
+    ESP2 -- "Wi-Fi 접속<br/>HomeCare-Net" --> ESP1
+    PHONE -- "Wi-Fi 접속 · HTTP<br/>X-Auth-Token" --> WEB
+    PHONE -. "작은방 2 데이터<br/>/api/status, /api/events" .-> ESP2
+```
+
+- 인터넷 없이 **ESP32 #1이 Wi-Fi 공유기(AP)** 역할을 합니다. 휴대폰과 ESP32 #2가 여기에 접속합니다.
+- 휴대폰 브라우저는 #1에서 대시보드 페이지를 받고, 두 보드의 `/api/*`를 3초마다 직접 조회합니다.
+
 ## 주요 기능
 - **침대 이탈 감지**: PIR 센서에 움직임이 5초 이상 잡히면 수면등을 자동으로 켭니다.
 - **수면 환경 감시**: 온도 18~28℃, 습도 30~70%를 벗어나면 알림을 보냅니다.
